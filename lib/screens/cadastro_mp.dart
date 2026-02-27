@@ -21,7 +21,6 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
 
   final _formKey = GlobalKey<FormState>();
   final _nomeCtrl = TextEditingController();
-  final _fornecedorCtrl = TextEditingController();
   final _custoCtrl = TextEditingController();
 
   String? _editingId;
@@ -30,7 +29,6 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
   @override
   void dispose() {
     _nomeCtrl.dispose();
-    _fornecedorCtrl.dispose();
     _custoCtrl.dispose();
     super.dispose();
   }
@@ -54,7 +52,6 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
     });
     _formKey.currentState?.reset();
     _nomeCtrl.clear();
-    _fornecedorCtrl.clear();
     _custoCtrl.clear();
   }
 
@@ -83,6 +80,230 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
 
     setState(() => _fornecedorSel = clean);
   }
+
+  Future<void> _openManageFornecedores(String uid) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFFFDF7ED),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 44,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Row(
+                  children: [
+                    Icon(Icons.store, color: Color(0xFF428E2E)),
+                    SizedBox(width: 8),
+                    Text(
+                      'Fornecedores',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                Expanded(
+                  child: StreamBuilder<List<String>>(
+                    stream: context.read<FornecedorProvider>().streamNomes(uid),
+                    builder: (context, snap) {
+                      final list = snap.data ?? [];
+                      if (snap.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (list.isEmpty) {
+                        return const Center(child: Text('Nenhum fornecedor cadastrado'));
+                      }
+
+                      return ListView.separated(
+                        itemCount: list.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, i) {
+                          final nome = list[i];
+                          return ListTile(
+                            title: Text(nome),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  tooltip: 'Editar',
+                                  icon: const Icon(Icons.edit, color: Colors.orange),
+                                  onPressed: () async {
+                                    await _editFornecedorDialog(uid, nome);
+                                  },
+                                ),
+                                IconButton(
+                                  tooltip: 'Excluir',
+                                  icon: const Icon(Icons.delete_forever, color: Colors.red),
+                                  onPressed: () async {
+                                    await _confirmDeleteFornecedor(uid, nome);
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF428E2E)),
+                    onPressed: () async {
+                      await _addFornecedorDialog(uid);
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Adicionar fornecedor'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _editFornecedorDialog(String uid, String oldName) async {
+    final ctrl = TextEditingController(text: oldName);
+    bool updateMPs = true;
+
+    final result = await showDialog<_EditFornecedorResult>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Editar fornecedor'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: ctrl,
+                decoration: const InputDecoration(labelText: 'Nome'),
+                autofocus: true,
+              ),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                value: updateMPs,
+                onChanged: (v) => setLocal(() => updateMPs = v ?? true),
+                title: const Text('Atualizar matérias-primas com o novo nome'),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(
+                ctx,
+                _EditFornecedorResult(newName: ctrl.text, updateMPs: updateMPs),
+              ),
+              child: const Text('Salvar'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == null) return;
+
+    final newName = result.newName.trim();
+    if (newName.isEmpty || newName == oldName.trim()) return;
+
+    try {
+      await context.read<FornecedorProvider>().renameFornecedor(
+            uid,
+            oldName: oldName,
+            newName: newName,
+            updateMateriasPrimas: result.updateMPs,
+          );
+
+      
+      if (_fornecedorSel == oldName) {
+        setState(() => _fornecedorSel = newName);
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fornecedor atualizado')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+    }
+  }
+
+  Future<void> _confirmDeleteFornecedor(String uid, String name) async {
+    bool removeFromMPs = true;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Excluir fornecedor'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Deseja excluir "$name"?'),
+              const SizedBox(height: 10),
+              CheckboxListTile(
+                value: removeFromMPs,
+                onChanged: (v) => setLocal(() => removeFromMPs = v ?? true),
+                title: const Text('Remover este fornecedor das matérias-primas'),
+                subtitle: const Text('As MPs ficarão com fornecedor vazio.'),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Excluir'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (ok != true) return;
+
+    try {
+      await context.read<FornecedorProvider>().deleteFornecedor(
+            uid,
+            name: name,
+            removeFromMateriasPrimas: removeFromMPs,
+          );
+
+      if (_fornecedorSel == name) {
+        setState(() => _fornecedorSel = null);
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fornecedor excluído')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+    }
+  }
+
 
   Future<void> _save(String uid) async {
     if (!_formKey.currentState!.validate()) return;
@@ -252,19 +473,32 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
                         builder: (context, snap) {
                           final fornecedores = snap.data ?? [];
 
-                         
-                          final currentValue = (_fornecedorSel != null && fornecedores.contains(_fornecedorSel))
-                              ? _fornecedorSel
-                              : null;
+                        
+                          if (_fornecedorSel != null && !fornecedores.contains(_fornecedorSel)) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted) setState(() => _fornecedorSel = null);
+                            });
+                          }
+
+                          final currentValue =
+                              (_fornecedorSel != null && fornecedores.contains(_fornecedorSel))
+                                  ? _fornecedorSel
+                                  : null;
 
                           return DropdownButtonFormField<String>(
                             value: currentValue,
                             decoration: const InputDecoration(labelText: 'Fornecedor'),
                             items: [
-                              ...fornecedores.map((f) => DropdownMenuItem(value: f, child: Text(f))),
+                              ...fornecedores.map(
+                                (f) => DropdownMenuItem(value: f, child: Text(f)),
+                              ),
                               const DropdownMenuItem<String>(
                                 value: '__add__',
                                 child: Text('+ Adicionar fornecedor...'),
+                              ),
+                              const DropdownMenuItem<String>(
+                                value: '__manage__',
+                                child: Text('⚙ Gerenciar fornecedores...'),
                               ),
                             ],
                             onChanged: (v) async {
@@ -272,11 +506,16 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
                                 await _addFornecedorDialog(uid);
                                 return;
                               }
+                              if (v == '__manage__') {
+                                await _openManageFornecedores(uid);
+                                return;
+                              }
                               setState(() => _fornecedorSel = v);
                             },
-                            validator: (v) {
-                              
-                              if (_fornecedorSel == null || _fornecedorSel!.trim().isEmpty) return 'Selecione um fornecedor';
+                            validator: (_) {
+                              if (_fornecedorSel == null || _fornecedorSel!.trim().isEmpty) {
+                                return 'Selecione um fornecedor';
+                              }
                               return null;
                             },
                           );
@@ -370,4 +609,10 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
       ),
     );
   }
+}
+
+class _EditFornecedorResult {
+  final String newName;
+  final bool updateMPs;
+  _EditFornecedorResult({required this.newName, required this.updateMPs});
 }
