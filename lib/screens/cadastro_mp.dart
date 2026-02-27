@@ -50,6 +50,27 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
     super.dispose();
   }
 
+ 
+  static final RegExp _nameAllowed = RegExp(r"^[0-9A-Za-zÀ-ÖØ-öø-ÿÇç\s]+$");
+
+ 
+  String _toTitleOne(String s) {
+    final clean = s.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (clean.isEmpty) return '';
+    final lower = clean.toLowerCase();
+    return lower[0].toUpperCase() + lower.substring(1);
+  }
+
+  
+  String? _validateNomeLike(String? v, String label) {
+    final t = (v ?? '').trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (t.isEmpty) return '$label não pode ser vazio';
+    if (!_nameAllowed.hasMatch(t)) {
+      return '$label: use apenas letras, números e espaços';
+    }
+    return null;
+  }
+
 
   double _parseBRL(String text) {
   
@@ -82,9 +103,9 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
   void _startEdit(MateriaPrimaModel mp) {
     setState(() {
       _editingId = mp.id;
-      _nomeCtrl.text = mp.nome;
+      _nomeCtrl.text = _toTitleOne(mp.nome);
       _unidadeSel = mp.unidade;
-      _fornecedorSel = mp.fornecedor;
+      _fornecedorSel = _toTitleOne(mp.fornecedor);
       _custoCtrl.text = _formatBRL(mp.custo);
     });
   }
@@ -113,10 +134,52 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
     setState(() => _saving = true);
 
     final provider = context.read<MateriaPrimaProvider>();
-    final nome = _nomeCtrl.text.trim();
-    final custo = _parseBRL(_custoCtrl.text);
-    final fornecedor = _fornecedorSel!.trim();
-    final unidade = _unidadeSel;
+    final nome = _toTitleOne(_nomeCtrl.text);
+    final fornecedor = _toTitleOne(_fornecedorSel!);
+    final unidade = _unidadeSel.trim();
+
+    final custoTxt = _custoCtrl.text.trim();
+    final custo = _parseBRL(custoTxt);
+
+   
+    if (nome.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nome não pode ser vazio')));
+      setState(() => _saving = false);
+      return;
+    }
+    if (!_nameAllowed.hasMatch(nome)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nome inválido: use letras, números e espaços')));
+      setState(() => _saving = false);
+      return;
+    }
+    if (fornecedor.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fornecedor não pode ser vazio')));
+      setState(() => _saving = false);
+      return;
+    }
+    if (!_nameAllowed.hasMatch(fornecedor)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fornecedor inválido: use letras, números e espaços')));
+      setState(() => _saving = false);
+      return;
+    }
+    if (unidade.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unidade não pode ser vazia')));
+      setState(() => _saving = false);
+      return;
+    }
+
+    
+    final custoDigitsOnly = custoTxt.replaceAll(RegExp(r'[^0-9]'), '');
+    if (custoDigitsOnly.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Custo não pode ser vazio')));
+      setState(() => _saving = false);
+      return;
+    }
+    if (custo < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Custo não pode ser negativo')));
+      setState(() => _saving = false);
+      return;
+    }
 
     try {
       if (_editingId == null) {
@@ -409,8 +472,23 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
       ),
     );
 
-    final clean = (nome ?? '').trim();
-    if (clean.isEmpty) return;
+    final clean = _toTitleOne(nome ?? '');
+    if (clean.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fornecedor não pode ser vazio')),
+      );
+      return;
+    }
+    if (!_nameAllowed.hasMatch(clean)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fornecedor inválido: use letras, números e espaços')),
+      );
+      return;
+    }
+
+    
 
     try {
       await context.read<FornecedorProvider>().addFornecedor(uid, clean);
@@ -697,8 +775,21 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
 
     if (result == null) return;
 
-    final newName = result.newName.trim();
-    if (newName.isEmpty || newName == oldName.trim()) return;
+    final newName = _toTitleOne(result.newName);
+    if (newName.isEmpty) {
+    if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fornecedor não pode ser vazio')),
+      );
+      return;
+    }
+    if (!_nameAllowed.hasMatch(newName)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Fornecedor inválido: use letras, números e espaços')),
+      );
+      return;
+    }
 
     try {
       await context.read<FornecedorProvider>().renameFornecedor(
@@ -1008,9 +1099,11 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
               TextFormField(
                 controller: _nomeCtrl,
                 decoration: deco('Nome da matéria-prima', icon: Icons.badge_outlined, hint: 'Ex.: Farinha de trigo'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe o nome' : null,
+                validator: (v) => _validateNomeLike(v, 'Nome'),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r"[0-9A-Za-zÀ-ÖØ-öø-ÿÇç\s]")),
+                ],
               ),
-
               const SizedBox(height: 12),
 
               Row(
@@ -1022,8 +1115,11 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
                       inputFormatters: const [_BrMoneyInputFormatter()],
                       decoration: deco('Custo', icon: Icons.paid, hint: 'R\$ 0,00'),
                       validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Informe o custo';
-                        final parsed = _parseBRL(v);
+                        final t = (v ?? '').trim();
+                        if (t.isEmpty) return 'Informe o custo';
+                        final digitsOnly = t.replaceAll(RegExp(r'[^0-9]'), '');
+                        if (digitsOnly.isEmpty) return 'Informe o custo';
+                        final parsed = _parseBRL(t);
                         if (parsed < 0) return 'Custo não pode ser negativo';
                         return null;
                       },
@@ -1042,6 +1138,10 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
                         DropdownMenuItem(value: 'caixa', child: Text('caixa')),
                       ],
                       onChanged: (v) => setState(() => _unidadeSel = v ?? 'kg'),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Selecione uma unidade';
+                        return null;
+                      },
                     ),
                   ),
                 ],
