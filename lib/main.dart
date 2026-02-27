@@ -12,17 +12,18 @@ import 'services/firestore_paths.dart';
 import 'providers/auth_provider.dart';
 import 'providers/materia_prima_provider.dart';
 import 'providers/fornecedor_provider.dart';
+import 'providers/produto_provider.dart';
 
 import 'screens/welcome.dart';
 import 'screens/login.dart';
 import 'screens/cadastro.dart';
-import 'screens/home.dart';
 import 'screens/cadastro_produto.dart';
 import 'screens/cadastro_mp.dart';
 import 'screens/detalhes_produto.dart';
 import 'screens/tabela_geral.dart';
 import 'screens/perfil.dart';
 import 'screens/ajuda.dart';
+import 'screens/produto.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +40,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => MateriaPrimaProvider(),),
+        Provider<ProdutoProvider>(
+          create: (_) => ProdutoProvider(),
+        ),
         Provider(create: (_) => FornecedorProvider()),
       ],
       child: const MyApp(),
@@ -88,10 +92,10 @@ class MyApp extends StatelessWidget {
             '/': (context) => const WelcomeScreen(),
             '/login': (context) => const LoginScreen(),
             '/cadastro': (context) => const CadastroScreen(),
-            '/home': (context) => const HomeScreen(),
             '/cadastro-produto': (context) => const CadastroProdutoScreen(),
             '/cadastro-mp': (context) => const CadastroMPScreen(),
-            '/produto': (context) => const ProdutoScreen(),
+            '/produtos': (context) => const ProdutosScreen(),
+            '/produto-detalhe': (_) => const ProdutoDetalheScreen(),
             '/tabela-geral': (context) => const TabelaGeralScreen(),
             '/perfil': (context) => const PerfilScreen(),
             '/ajuda': (context) => const AjudaScreen(),

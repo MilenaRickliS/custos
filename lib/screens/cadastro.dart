@@ -230,7 +230,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
         const SnackBar(content: Text("Cadastro realizado!")),
       );
 
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      Navigator.pushNamedAndRemoveUntil(context, '/produtos', (_) => false);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

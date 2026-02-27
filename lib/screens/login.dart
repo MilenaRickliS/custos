@@ -95,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await _saveRememberedEmail();
 
       if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      Navigator.pushNamedAndRemoveUntil(context, '/produtos', (_) => false);
     } catch (e) {
       _snack(e.toString());
     } finally {

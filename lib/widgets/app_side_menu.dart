@@ -51,9 +51,9 @@ class AppSideMenu extends StatelessWidget {
             AppMenuItem(
               expanded: expanded,
               icon: Icons.home_rounded,
-              label: 'Home',
-              route: '/home',
-              selected: selectedRoute == '/home' || selectedRoute == null,
+              label: 'Produtos',
+              route: '/produtos',
+              selected: selectedRoute == '/produtos' || selectedRoute == null,
               onTap: onNavigate,
             ),
             AppMenuItem(
