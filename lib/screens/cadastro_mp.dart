@@ -153,47 +153,258 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
     }
   }
 
-  Future<void> _confirmDelete(String uid, String id) async {
+  Future<void> _confirmDelete(String uid, String id, String nome) async {
+    FocusScope.of(context).unfocus(); 
+
+    const green = Color(0xFF428E2E);
+    const danger = Color(0xFFE53935);
+
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirmar exclusão'),
-        content: const Text('Deseja excluir esta matéria-prima? Esta ação não pode ser desfeita.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancelar')),
-          ElevatedButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Excluir')),
-        ],
-      ),
+      barrierDismissible: true,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          titlePadding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+          contentPadding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+          actionsPadding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+          title: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: danger.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.delete_forever, color: danger),
+              ),
+              const SizedBox(width: 12),
+               Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                    ),
+                    children: [
+                      const TextSpan(text: 'Excluir '),
+                      TextSpan(
+                        text: '“$nome”',
+                        style: const TextStyle(color: danger),
+                      ),
+                      const TextSpan(text: '?'),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Essa ação não pode ser desfeita.',
+                style: TextStyle(fontSize: 14, height: 1.3),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: danger.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: danger.withOpacity(0.18)),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.warning_amber_rounded, color: danger),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Tem certeza que deseja excluir?',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            OutlinedButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                side: BorderSide(color: Colors.black.withOpacity(0.16)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.black),),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              icon: const Icon(Icons.delete_outline, color: Colors.white,),
+              label: const Text('Excluir'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: danger,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
+          ],
+        );
+      },
     );
 
     if (ok == true) {
       try {
         await context.read<MateriaPrimaProvider>().delete(uid, id);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Excluído')));
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Matéria-prima excluída'),
+            backgroundColor: green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        );
+
         if (_editingId == id) _clearForm();
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao excluir: $e')));
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao excluir: $e'),
+            backgroundColor: danger,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        );
       }
     }
   }
 
 
   Future<void> _addFornecedorDialog(String uid) async {
+    FocusScope.of(context).unfocus();
+
+    const green = Color(0xFF428E2E);
+    const danger = Color(0xFFE53935);
+
     final ctrl = TextEditingController();
+
     final nome = await showDialog<String>(
       context: context,
+      barrierDismissible: true,
       builder: (ctx) => AlertDialog(
-        title: const Text('Novo fornecedor'),
-        content: TextField(
-          controller: ctrl,
-          decoration: const InputDecoration(labelText: 'Nome do fornecedor'),
-          autofocus: true,
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        titlePadding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+        contentPadding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+        actionsPadding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+
+        title: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: green.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.store_mall_directory_outlined, color: green),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Novo fornecedor',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
         ),
+
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 6),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => Navigator.pop(ctx, ctrl.text),
+              decoration: InputDecoration(
+                labelText: 'Nome do fornecedor',
+                hintText: 'Ex.: Distribuidora X',
+                prefixIcon: const Icon(Icons.badge_outlined),
+                filled: true,
+                fillColor: const Color(0xFFFAF7F1),
+                labelStyle: TextStyle(
+                  color: green,
+                  fontWeight: FontWeight.w600,
+                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: Colors.black.withOpacity(0.06)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: green, width: 1.6),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: green.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: green.withOpacity(0.18)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: green),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Dica: use um nome curto e padronizado para facilitar a busca.',
+                      style: TextStyle(fontSize: 12, height: 1.25),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          ElevatedButton(onPressed: () => Navigator.pop(ctx, ctrl.text), child: const Text('Salvar')),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              side: BorderSide(color: Colors.black.withOpacity(0.16)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.black),),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, ctrl.text),
+            icon: const Icon(Icons.check, color: Colors.white,),
+            label: const Text('Salvar'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+          ),
         ],
       ),
     );
@@ -201,17 +412,40 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
     final clean = (nome ?? '').trim();
     if (clean.isEmpty) return;
 
-    await context.read<FornecedorProvider>().addFornecedor(uid, clean);
-    if (!mounted) return;
+    try {
+      await context.read<FornecedorProvider>().addFornecedor(uid, clean);
+      if (!mounted) return;
 
-    setState(() => _fornecedorSel = clean);
+      setState(() => _fornecedorSel = clean);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Fornecedor “$clean” adicionado'),
+          backgroundColor: green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao adicionar: $e'),
+          backgroundColor: danger,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+      );
+    }
   }
 
   Future<void> _openManageFornecedores(String uid) async {
     await showModalBottomSheet(
+      backgroundColor: Colors.white,
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFFFDF7ED),
+      
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
@@ -285,8 +519,8 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF428E2E)),
                     onPressed: () async => _addFornecedorDialog(uid),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Adicionar fornecedor'),
+                    icon: const Icon(Icons.add, color: Colors.white,),
+                    label: const Text('Adicionar fornecedor', style: TextStyle(color: Colors.white),),
                   ),
                 ),
               ],
@@ -298,40 +532,163 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
   }
 
   Future<void> _editFornecedorDialog(String uid, String oldName) async {
+    FocusScope.of(context).unfocus();
+
+    const green = Color(0xFF428E2E);
+    const danger = Color(0xFFE53935);
+
     final ctrl = TextEditingController(text: oldName);
     bool updateMPs = true;
 
     final result = await showDialog<_EditFornecedorResult>(
       context: context,
+      barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Editar fornecedor'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          titlePadding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+          contentPadding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+          actionsPadding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+
+          title: Row(
             children: [
-              TextField(
-                controller: ctrl,
-                decoration: const InputDecoration(labelText: 'Nome'),
-                autofocus: true,
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: green.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.edit_rounded, color: green),
               ),
-              const SizedBox(height: 8),
-              CheckboxListTile(
-                value: updateMPs,
-                onChanged: (v) => setLocal(() => updateMPs = v ?? true),
-                title: const Text('Atualizar matérias-primas com o novo nome'),
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
+              const SizedBox(width: 12),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                    ),
+                    children: [
+                      const TextSpan(text: 'Editar fornecedor\n'),
+                      TextSpan(
+                        text: '“$oldName”',
+                        style: const TextStyle(color: green, fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
+
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 6),
+
+              TextField(
+                controller: ctrl,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Nome',
+                  prefixIcon: const Icon(Icons.store_outlined),
+                  filled: true,
+                  fillColor: const Color(0xFFFAF7F1),
+                  labelStyle: TextStyle(
+                    color: green,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: Colors.black.withOpacity(0.06)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: green, width: 1.6),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: green.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: green.withOpacity(0.18)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.info_outline, color: green),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Sincronização',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Se marcar a opção abaixo, as matérias-primas que usam este fornecedor serão atualizadas com o novo nome.',
+                            style: TextStyle(fontSize: 12, height: 1.25),
+                          ),
+                          const SizedBox(height: 8),
+                          CheckboxListTile(
+                            value: updateMPs,
+                            onChanged: (v) => setLocal(() => updateMPs = v ?? true),
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            
+                            checkColor: Colors.white,
+                            activeColor: const Color(0xFF2B2B2B),
+                            side: BorderSide(color: Colors.black.withOpacity(0.4)),
+                            title: const Text(
+                              'Atualizar matérias-primas',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-            ElevatedButton(
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                side: BorderSide(color: Colors.black.withOpacity(0.16)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.black),),
+            ),
+            ElevatedButton.icon(
               onPressed: () => Navigator.pop(
                 ctx,
                 _EditFornecedorResult(newName: ctrl.text, updateMPs: updateMPs),
               ),
-              child: const Text('Salvar'),
+              icon: const Icon(Icons.check, color: Colors.white,),
+              label: const Text('Salvar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: green,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
             ),
           ],
         ),
@@ -354,39 +711,164 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
       if (_fornecedorSel == oldName) setState(() => _fornecedorSel = newName);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fornecedor atualizado')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Fornecedor atualizado para “$newName”'),
+          backgroundColor: green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro: $e'),
+          backgroundColor: danger,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+      );
     }
   }
 
-  Future<void> _confirmDeleteFornecedor(String uid, String name) async {
+ Future<void> _confirmDeleteFornecedor(String uid, String name) async {
+    FocusScope.of(context).unfocus();
+
+    const green = Color(0xFF428E2E);
+    const danger = Color(0xFFE53935);
+
     bool removeFromMPs = true;
 
     final ok = await showDialog<bool>(
       context: context,
+      barrierDismissible: true,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Excluir fornecedor'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          titlePadding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+          contentPadding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+          actionsPadding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+
+          title: Row(
             children: [
-              Text('Deseja excluir "$name"?'),
-              const SizedBox(height: 10),
-              CheckboxListTile(
-                value: removeFromMPs,
-                onChanged: (v) => setLocal(() => removeFromMPs = v ?? true),
-                title: const Text('Remover este fornecedor das matérias-primas'),
-                subtitle: const Text('As MPs ficarão com fornecedor vazio.'),
-                contentPadding: EdgeInsets.zero,
-                controlAffinity: ListTileControlAffinity.leading,
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: danger.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.delete_forever, color: danger),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black,
+                    ),
+                    children: [
+                      const TextSpan(text: 'Excluir fornecedor\n'),
+                      TextSpan(
+                        text: '“$name”',
+                        style: const TextStyle(color: danger, fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
+
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 6),
+              const Text(
+                'Essa ação não pode ser desfeita.',
+                style: TextStyle(fontSize: 14, height: 1.3),
+              ),
+              const SizedBox(height: 12),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: danger.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: danger.withOpacity(0.18)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: danger),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Atenção',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Você pode remover este fornecedor das matérias-primas para evitar dados antigos.',
+                            style: TextStyle(fontSize: 12, height: 1.25),
+                          ),
+                          const SizedBox(height: 8),
+                          CheckboxListTile(
+                            value: removeFromMPs,
+                            onChanged: (v) => setLocal(() => removeFromMPs = v ?? true),
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            checkColor: Colors.white,
+                            activeColor: const Color(0xFF2B2B2B),
+                            side: BorderSide(color: Colors.black.withOpacity(0.4)),
+                            title: const Text(
+                              'Remover das matérias-primas',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                            ),
+                            subtitle: const Text(
+                              'As MPs ficarão com fornecedor vazio.',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-            ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Excluir')),
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                side: BorderSide(color: Colors.black.withOpacity(0.16)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.black),),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(ctx, true),
+              icon: const Icon(Icons.delete_outline, color: Colors.white,),
+              label: const Text('Excluir'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: danger,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
           ],
         ),
       ),
@@ -404,13 +886,26 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
       if (_fornecedorSel == name) setState(() => _fornecedorSel = null);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fornecedor excluído')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Fornecedor “$name” excluído'),
+          backgroundColor: green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro: $e'),
+          backgroundColor: danger,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+      );
     }
   }
-
 
   Widget _pill(IconData icon, String text) {
     return Container(
@@ -440,6 +935,14 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
         hintText: hint,
         prefixIcon: icon == null ? null : Icon(icon),
         filled: true,
+        labelStyle: TextStyle(
+          color: green,
+          fontWeight: FontWeight.w600,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: green,
+          fontWeight: FontWeight.w800,
+        ),
         fillColor: const Color(0xFFFAF7F1),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
         enabledBorder: OutlineInputBorder(
@@ -610,7 +1113,7 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.save),
+                          : const Icon(Icons.save, color: Colors.white,),
                       label: Text(_editingId == null ? 'Adicionar' : 'Salvar alterações'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: green,
@@ -629,7 +1132,8 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         side: BorderSide(color: Colors.black.withOpacity(0.14)),
                       ),
-                      child: const Text('Cancelar'),
+                      child: const Text('Cancelar', style: TextStyle(color: Colors.red),),
+                      
                     ),
                 ],
               ),
@@ -835,7 +1339,7 @@ class _CadastroMPScreenState extends State<CadastroMPScreen> {
                                       IconButton(
                                         tooltip: 'Excluir',
                                         icon: const Icon(Icons.delete_forever, color: Colors.red),
-                                        onPressed: () => _confirmDelete(uid, mp.id),
+                                        onPressed: () => _confirmDelete(uid, mp.id, mp.nome),
                                       ),
                                     ],
                                   ),
