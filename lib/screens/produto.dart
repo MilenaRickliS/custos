@@ -250,6 +250,10 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(color: Colors.black.withOpacity(0.06)),
             ),
+            labelStyle: TextStyle(
+                  color: _green,
+                  fontWeight: FontWeight.w600,
+                ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(color: _green, width: 1.6),
@@ -340,59 +344,88 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
                         ...List.generate(_draftItems.length, (i) {
                           final d = _draftItems[i];
 
+                          final isSmall = MediaQuery.of(context).size.width < 520;
+
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 10),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: DropdownButtonFormField<String>(
-                                    value: (d.mpId != null && mps.any((x) => x.id == d.mpId)) ? d.mpId : null,
-                                    decoration: deco('Matéria-prima', icon: Icons.inventory_2_outlined),
-                                    items: mps
-                                        .map((mp) => DropdownMenuItem(
+                            child: isSmall
+                                ? Column(
+                                    children: [
+                                      DropdownButtonFormField<String>(
+                                        value: (d.mpId != null && mps.any((x) => x.id == d.mpId))
+                                            ? d.mpId
+                                            : null,
+                                        decoration: deco('Matéria-prima', icon: Icons.inventory_2_outlined),
+                                        items: mps.map((mp) {
+                                          return DropdownMenuItem(
+                                            value: mp.id,
+                                            child: Text(mp.nome, overflow: TextOverflow.ellipsis),
+                                          );
+                                        }).toList(),
+                                        onChanged: (v) => setState(() => d.mpId = v),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: TextFormField(
+                                              initialValue: d.quantidade,
+                                              onChanged: (v) => d.quantidade = v,
+                                              keyboardType:
+                                                  const TextInputType.numberWithOptions(decimal: true),
+                                              decoration: deco('Qtd', icon: Icons.exposure_plus_1),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                if (_draftItems.length > 1) _draftItems.removeAt(i);
+                                              });
+                                            },
+                                            icon: const Icon(Icons.close_rounded, color: Color(0xFFE53935)),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  )
+                                : Row(
+                                    children: [
+                                      Expanded(
+                                        child: DropdownButtonFormField<String>(
+                                          value: (d.mpId != null && mps.any((x) => x.id == d.mpId))
+                                              ? d.mpId
+                                              : null,
+                                          decoration: deco('Matéria-prima', icon: Icons.inventory_2_outlined),
+                                          items: mps.map((mp) {
+                                            return DropdownMenuItem(
                                               value: mp.id,
                                               child: Text(mp.nome, overflow: TextOverflow.ellipsis),
-                                            ))
-                                        .toList(),
-                                    onChanged: (v) => setState(() => d.mpId = v),
-                                    validator: (_) {
-                                    
-                                      final hasSomething = (d.mpId ?? '').trim().isNotEmpty || (d.quantidade ?? '').trim().isNotEmpty;
-                                      if (!hasSomething) return null;
-                                      if ((d.mpId ?? '').trim().isEmpty) return 'Selecione a MP';
-                                      return null;
-                                    },
+                                            );
+                                          }).toList(),
+                                          onChanged: (v) => setState(() => d.mpId = v),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      SizedBox(
+                                        width: 120,
+                                        child: TextFormField(
+                                          initialValue: d.quantidade,
+                                          onChanged: (v) => d.quantidade = v,
+                                          keyboardType:
+                                              const TextInputType.numberWithOptions(decimal: true),
+                                          decoration: deco('Qtd', icon: Icons.exposure_plus_1),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            if (_draftItems.length > 1) _draftItems.removeAt(i);
+                                          });
+                                        },
+                                        icon: const Icon(Icons.close_rounded, color: Color(0xFFE53935)),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(width: 10),
-                                SizedBox(
-                                  width: 140,
-                                  child: TextFormField(
-                                    initialValue: d.quantidade,
-                                    onChanged: (v) => d.quantidade = v,
-                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                    decoration: deco('Qtd', icon: Icons.exposure_plus_1, hint: 'Ex.: 2,5'),
-                                    validator: (v) {
-                                      final hasSomething = (d.mpId ?? '').trim().isNotEmpty || (v ?? '').trim().isNotEmpty;
-                                      if (!hasSomething) return null;
-                                      final qtd = _parseDouble(v ?? '');
-                                      if (qtd <= 0) return 'Qtd > 0';
-                                      return null;
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                IconButton(
-                                  tooltip: 'Remover linha',
-                                  onPressed: () {
-                                    setState(() {
-                                      if (_draftItems.length > 1) _draftItems.removeAt(i);
-                                    });
-                                  },
-                                  icon: const Icon(Icons.close_rounded, color: Color(0xFFE53935)),
-                                ),
-                              ],
-                            ),
                           );
                         }),
                         Align(
@@ -620,28 +653,46 @@ class _ProdutosScreenState extends State<ProdutosScreen> {
         },
       ),
       body: LayoutBuilder(
-        builder: (context, c) {
-          final isWide = c.maxWidth >= 980;
-          final content = isWide
-              ? Row(
+          builder: (context, c) {
+            final isWide = c.maxWidth >= 980;
+
+            if (isWide) {
+              return Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(width: 460, child: _form(uid)),
+                    SizedBox(
+                      width: 460,
+                      child: SingleChildScrollView(
+                        child: _form(uid),
+                      ),
+                    ),
                     const SizedBox(width: 16),
-                    Expanded(child: _list(uid)),
+                    Expanded(
+                      child: _list(uid),
+                    ),
                   ],
-                )
-              : Column(
-                  children: [
-                    _form(uid),
-                    const SizedBox(height: 16),
-                    Expanded(child: _list(uid)),
-                  ],
-                );
+                ),
+              );
+            }
 
-          return Padding(padding: const EdgeInsets.all(16), child: content);
-        },
-      ),
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _form(uid),
+                  const SizedBox(height: 16),
+
+                  SizedBox(
+                    height: 500,
+                    child: _list(uid),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
     );
   }
 }
